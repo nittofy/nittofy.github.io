@@ -1,0 +1,44 @@
+[
+  {
+    "id": 1,
+    "name": "Kemei KM-1997 Professional Hair Trimmer",
+    "price": 2500,
+    "old_price": 3200,
+    "image": "images/trimmer.jpg"
+  },
+  {
+    "id": 2,
+    "name": "JISULIFE FA13P Rechargeable Mini Fan",
+    "price": 3200,
+    "old_price": 3800,
+    "image": "images/fan.jpg"
+  },
+  {
+    "id": 3,
+    "name": "OnePlus Bullets Wireless Z2 Neckband",
+    "price": 2200,
+    "old_price": 2600,
+    "image": "images/neckband.jpg"
+  },
+  {
+    "id": 4,
+    "name": "Stainless Steel Vacuum Water Bottle",
+    "price": 650,
+    "old_price": 950,
+    "image": "images/bottle.jpg"
+  },
+  {
+    "id": 5,
+    "name": "TP-Link Archer C6 WiFi Router",
+    "price": 3800,
+    "old_price": 4500,
+    "image": "images/router.jpg"
+  },
+  {
+    "id": 6,
+    "name": "Gaming Mouse RGB",
+    "price": 1200,
+    "old_price": 1500,
+    "image": "images/mouse.jpg"
+  }
+]

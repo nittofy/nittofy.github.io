@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nittofy - Best Deals</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+    <!-- Header -->
+    <header>
+        <div class="container header-container">
+            <div class="logo" onclick="showHome()">Nitto<span>fy</span></div>
+            <div class="search-bar" id="searchContainer">
+                <input type="text" id="searchInput" placeholder="Search products...">
+            </div>
+            <div class="cart-icon" onclick="toggleCart()">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span id="cartCount">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Product Grid -->
+    <main id="home-view" class="container">
+        <h2 class="section-title">All Products</h2>
+        <div id="product-list" class="product-grid">
+            <!-- Products loaded via JS -->
+        </div>
+    </main>
+
+    <!-- Checkout Page -->
+    <main id="checkout-view" class="container hidden">
+        <button class="back-btn" onclick="showHome()">
+            <i class="fa-solid fa-arrow-left"></i> Back to Shopping
+        </button>
+
+        <h2 class="section-title">Checkout & Payment</h2>
+
+        <div class="checkout-container">
+            <div class="checkout-form">
+                <h3>Customer Details</h3>
+                <div class="form-group">
+                    <label>Full Name *</label>
+                    <input type="text" id="c-name" placeholder="Ex: Mubarok Ahmed">
+                </div>
+                <div class="form-group">
+                    <label>Phone Number *</label>
+                    <input type="tel" id="c-phone" placeholder="Ex: 018XXXXXXXX">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="c-email" placeholder="Ex: email@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Delivery Address *</label>
+                    <textarea id="c-address" rows="3" placeholder="Full address (Area, House, Road)"></textarea>
+                </div>
+
+                <h3>Payment Method</h3>
+                <div class="payment-options">
+                    <label class="payment-card selected" onclick="selectPayment('cod', this)">
+                        <input type="radio" name="payment" value="cod" checked>
+                        <div class="pay-info">
+                            <span class="pay-title"><i class="fa-solid fa-truck"></i> Cash on Delivery</span>
+                            <span class="pay-desc">Pay when you receive the product.</span>
+                        </div>
+                    </label>
+
+                    <label class="payment-card" onclick="selectPayment('bkash', this)">
+                        <input type="radio" name="payment" value="bkash">
+                        <div class="pay-info">
+                            <span class="pay-title" style="color:#e2136e;"><i class="fa-solid fa-money-bill-wave"></i> Order via bKash</span>
+                            <span class="pay-desc">Send money to 01897436108</span>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="bkash-field" class="form-group hidden fade-in">
+                    <label style="color:#e2136e; font-weight:bold;">bKash Transaction ID (TrxID) *</label>
+                    <input type="text" id="c-trxid" placeholder="Ex: 9H77G12KL">
+                    <small>Please enter the TrxID received after payment.</small>
+                </div>
+
+                <button class="place-order-btn" onclick="placeOrder()">
+                    Place Order <i class="fa-brands fa-whatsapp"></i>
+                </button>
+            </div>
+
+            <div class="order-summary">
+                <h3>Order Summary</h3>
+                <div id="checkout-items"></div>
+                <div class="summary-total">
+                    <span>Total Amount</span>
+                    <span id="checkout-total">৳0</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container footer-content">
+            <div class="contact-item">
+                <i class="fa-brands fa-whatsapp"></i>
+                <span>WhatsApp: <a href="https://wa.me/8801897436108" target="_blank">01897436108</a></span>
+            </div>
+            <div class="contact-item">
+                <i class="fa-solid fa-envelope"></i>
+                <span>Email: <a href="mailto:mubarokkamil10@gmail.com">mubarokkamil10@gmail.com</a></span>
+            </div>
+        </div>
+        <div class="copyright">
+            &copy; 2026 Nittofy. All rights reserved.
+        </div>
+    </footer>
+
+    <!-- Cart Sidebar -->
+    <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
+    <div class="cart-sidebar" id="cartSidebar">
+        <div class="cart-header">
+            <h3>My Cart</h3>
+            <button onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="cart-items" id="cartItems"></div>
+        <div class="cart-footer">
+            <div class="total">
+                <span>Total:</span>
+                <span id="cartTotal">৳0</span>
+            </div>
+            <button class="checkout-btn" onclick="goToCheckout()">
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
