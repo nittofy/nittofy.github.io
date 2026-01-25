@@ -1,6 +1,7 @@
 let products = [];
 let cart = JSON.parse(localStorage.getItem('nittofy-cart')) || [];
 
+// --- 1. DATA LOADING ---
 async function loadProducts() {
     try {
         const response = await fetch('products.json');
@@ -12,6 +13,7 @@ async function loadProducts() {
     }
 }
 
+// --- 2. RENDER LOGIC ---
 function renderProducts(list) {
     const container = document.getElementById('product-list');
     container.innerHTML = '';
@@ -39,6 +41,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
     renderProducts(filtered);
 });
 
+// --- 3. CART LOGIC ---
 function addToCart(id) {
     const product = products.find(p => p.id === id);
     const item = cart.find(i => i.id === id);
@@ -101,14 +104,13 @@ function toggleCart(forceOpen) {
     }
 }
 
+// --- 4. NAVIGATION ---
 function goToCheckout() {
     if (cart.length === 0) return alert("Your cart is empty!");
-    
     toggleCart(false);
     document.getElementById('home-view').classList.add('hidden');
     document.getElementById('searchContainer').classList.add('hidden');
     document.getElementById('checkout-view').classList.remove('hidden');
-    
     renderCheckoutSummary();
     window.scrollTo(0, 0);
 }
@@ -141,7 +143,6 @@ function selectPayment(method, element) {
     document.querySelectorAll('.payment-card').forEach(el => el.classList.remove('selected'));
     element.classList.add('selected');
     element.querySelector('input').checked = true;
-
     if (method === 'bkash') {
         bkashField.classList.remove('hidden');
     } else {
@@ -149,7 +150,10 @@ function selectPayment(method, element) {
     }
 }
 
+// --- 5. ORDER & GOOGLE SHEETS INTEGRATION ---
+
 function placeOrder() {
+    // 1. Get Values
     const name = document.getElementById('c-name').value.trim();
     const phone = document.getElementById('c-phone').value.trim();
     const email = document.getElementById('c-email').value.trim();
@@ -157,6 +161,7 @@ function placeOrder() {
     const paymentMethod = document.querySelector('input[name="payment"]:checked').value;
     const trxId = document.getElementById('c-trxid').value.trim();
 
+    // 2. Validation
     if (!name || !phone || !address) {
         return alert("Please fill in Name, Phone, and Address.");
     }
@@ -164,9 +169,67 @@ function placeOrder() {
         return alert("Please enter your bKash Transaction ID.");
     }
 
-    const orderId = 'ORD-' + Math.floor(10000 + Math.random() * 90000);
-    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    // 3. UI: Show Loading State
+    const btn = document.querySelector('.place-order-btn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    btn.disabled = true;
 
+    // 4. Generate Order Data
+    const orderId = crypto.randomUUID().toUpperCase();
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    
+    // Create a string of products for the Google Sheet
+    let productString = cart.map(item => `${item.name} (x${item.qty})`).join(", ");
+
+    // 5. Send to Google Sheets
+    // Your provided URL
+    const scriptURL = 'https://script.google.com/macros/s/AKfycbx5QAIXyKEwIcF0RasWTdmpJSjtn9VmHluwOhJpqbyVyP6WXW2WGAdJLO8LqBwSBGA71w/exec';
+
+    const formData = {
+        order_id: orderId,
+        name: name,
+        phone: phone,
+        address: address,
+        products: productString,
+        amount: totalAmount,
+        payment: paymentMethod,
+        trxid: trxId || "N/A"
+    };
+
+    fetch(scriptURL, {
+        method: 'POST',
+        mode: 'no-cors', // Essential for Google Apps Script interaction
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        // 6. Success: Open WhatsApp
+        sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount);
+        
+        // Reset Button
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        
+        // Optional: Clear Cart logic here if you want
+        // localStorage.removeItem('nittofy-cart');
+        // cart = [];
+        // updateCartUI();
+        // showHome();
+    })
+    .catch(error => {
+        // 7. Error: Log it, but still open WhatsApp so you don't lose the sale
+        console.error('Error!', error.message);
+        alert("Network error. Opening WhatsApp directly.");
+        sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+}
+
+function sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount) {
     let msg = `Hello, I want to place an order.%0A%0A`;
     msg += `Order ID: ${orderId}%0A%0A`;
     msg += `Products:%0A`;
@@ -187,9 +250,9 @@ function placeOrder() {
         msg += `bKash TrxID: ${trxId}%0A`;
     }
 
-    // YOUR WHATSAPP NUMBER
     const whatsappNumber = "8801897436108"; 
     window.open(`https://wa.me/${whatsappNumber}?text=${msg}`, '_blank');
 }
 
+// Start App
 loadProducts();
