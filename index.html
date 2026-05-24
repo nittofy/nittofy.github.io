@@ -3,22 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- 1. GOOGLE VERIFICATION -->
+
+    <!-- Google Verification -->
     <meta name="google-site-verification" content="iiuqAUSStUpmCuOJmvVEjbXYMljKlK_6lpfWaX_59Q8" />
-    
-    <title>Nittofy - Best Deals</title>
-    <meta name="keywords" content="Nittofy, Gadget Shop BD, Online Shopping Bangladesh">
+
+    <title>Nittofy - Best Deals on Gadgets in Bangladesh</title>
+
+    <!-- SEO: description was missing before -->
+    <meta name="description" content="Nittofy — buy top-quality gadgets, trimmers, fans, earphones and electronics at the best prices in Bangladesh. Fast delivery, Cash on Delivery & bKash accepted.">
+    <meta name="keywords" content="Nittofy, Gadget Shop BD, Online Shopping Bangladesh, trimmer Bangladesh, fan Bangladesh">
     <meta name="author" content="Nittofy">
     <meta name="robots" content="index, follow">
-    <!-- 2. OPEN GRAPH (For WhatsApp & Facebook Sharing) -->
+
+    <!-- Open Graph (WhatsApp & Facebook sharing) -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="https://nittofy.github.io/"> 
+    <meta property="og:url" content="https://nittofy.github.io/">
     <meta property="og:title" content="Nittofy - Premium Gadgets at Best Prices">
     <meta property="og:description" content="Discover top-quality gadgets at unbeatable prices. Shop now at Nittofy!">
+    <!-- og:image added — create a 1200x630 cover and place at images/og-cover.jpg -->
+    <meta property="og:image" content="https://nittofy.github.io/images/og-cover.jpg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <!-- Favicon (SVG inline data-uri — no extra file needed) -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff6b00'/><text y='.9em' font-size='70' font-family='serif' font-weight='bold' fill='white' x='12'>N</text></svg>">
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- 5. SCHEMA MARKUP (For Google Rich Results) -->
+    <!-- Schema Markup for Google Rich Results -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -40,16 +53,34 @@
 </head>
 <body>
 
+    <!-- Toast notification (replaces all alert() calls) -->
+    <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
     <!-- Header -->
     <header>
         <div class="container header-container">
             <div class="logo" onclick="showHome()">Nitto<span>fy</span></div>
+
+            <!-- Desktop search -->
             <div class="search-bar" id="searchContainer">
-                <input type="text" id="searchInput" placeholder="Search products...">
+                <input type="text" id="searchInput" placeholder="Search products..." aria-label="Search products">
             </div>
-            <div class="cart-icon" onclick="toggleCart()">
+
+            <!-- Mobile search toggle -->
+            <button class="search-icon-btn" id="mobileSearchBtn" onclick="toggleMobileSearch()" aria-label="Open search">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </button>
+
+            <div class="cart-icon" onclick="toggleCart()" role="button" aria-label="Open cart" tabindex="0">
                 <i class="fa-solid fa-cart-shopping"></i>
                 <span id="cartCount">0</span>
+            </div>
+        </div>
+
+        <!-- Mobile search bar (hidden by default, shown on toggle) -->
+        <div class="mobile-search-bar hidden" id="mobileSearchContainer">
+            <div class="container">
+                <input type="text" id="mobileSearchInput" placeholder="Search products..." aria-label="Search products">
             </div>
         </div>
     </header>
@@ -57,37 +88,42 @@
     <!-- Product Grid -->
     <main id="home-view" class="container">
         <h2 class="section-title">All Products</h2>
-        <div id="product-list" class="product-grid">
-            <!-- Products loaded via JS -->
+        <!-- Skeleton placeholders shown while loading -->
+        <div id="product-list" class="product-grid" aria-label="Product list">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
         </div>
     </main>
 
     <!-- Checkout Page -->
     <main id="checkout-view" class="container hidden">
-        <button class="back-btn" onclick="showHome()">
+        <button class="back-btn" onclick="showHome()" aria-label="Back to shopping">
             <i class="fa-solid fa-arrow-left"></i> Back to Shopping
         </button>
 
-        <h2 class="section-title">Checkout & Payment</h2>
+        <h2 class="section-title">Checkout &amp; Payment</h2>
 
         <div class="checkout-container">
             <div class="checkout-form">
                 <h3>Customer Details</h3>
                 <div class="form-group">
-                    <label>Full Name *</label>
-                    <input type="text" id="c-name" placeholder="Ex: Mubarok Ahmed">
+                    <label for="c-name">Full Name *</label>
+                    <input type="text" id="c-name" placeholder="Ex: Mubarok Ahmed" autocomplete="name" maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label>Phone Number *</label>
-                    <input type="tel" id="c-phone" placeholder="Ex: 018XXXXXXXX">
+                    <label for="c-phone">Phone Number *</label>
+                    <input type="tel" id="c-phone" placeholder="Ex: 01XXXXXXXXX" autocomplete="tel" maxlength="11">
+                    <small id="phone-hint" class="field-hint"></small>
                 </div>
                 <div class="form-group">
-                    <label>Email Address</label>
-                    <input type="email" id="c-email" placeholder="Ex: email@example.com">
+                    <label for="c-email">Email Address</label>
+                    <input type="email" id="c-email" placeholder="Ex: email@example.com" autocomplete="email" maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label>Delivery Address *</label>
-                    <textarea id="c-address" rows="3" placeholder="Full address (Area, House, Road)"></textarea>
+                    <label for="c-address">Delivery Address *</label>
+                    <textarea id="c-address" rows="3" placeholder="Full address (Area, House, Road)" maxlength="300"></textarea>
                 </div>
 
                 <h3>Payment Method</h3>
@@ -110,12 +146,12 @@
                 </div>
 
                 <div id="bkash-field" class="form-group hidden fade-in">
-                    <label style="color:#e2136e; font-weight:bold;">bKash Transaction ID (TrxID) *</label>
-                    <input type="text" id="c-trxid" placeholder="Ex: 9H77G12KL">
+                    <label for="c-trxid" style="color:#e2136e; font-weight:bold;">bKash Transaction ID (TrxID) *</label>
+                    <input type="text" id="c-trxid" placeholder="Ex: 9H77G12KL" maxlength="20">
                     <small>Please enter the TrxID received after payment.</small>
                 </div>
 
-                <button class="place-order-btn" onclick="placeOrder()">
+                <button class="place-order-btn" id="placeOrderBtn" onclick="placeOrder()">
                     Place Order <i class="fa-brands fa-whatsapp"></i>
                 </button>
             </div>
@@ -131,17 +167,35 @@
         </div>
     </main>
 
+    <!-- Order Confirmation Page (new — shown after order is placed) -->
+    <main id="confirm-view" class="container hidden">
+        <div class="confirm-box">
+            <div class="confirm-icon"><i class="fa-solid fa-circle-check"></i></div>
+            <h2>Order Placed!</h2>
+            <p>Your order has been sent. We will contact you on <strong id="confirm-phone"></strong> to confirm.</p>
+            <p class="confirm-id">Order ID: <span id="confirm-order-id"></span></p>
+            <button class="place-order-btn" onclick="showHome()" style="max-width:260px;margin:20px auto 0;">
+                <i class="fa-solid fa-house"></i> Continue Shopping
+            </button>
+        </div>
+    </main>
+
     <!-- Footer -->
     <footer>
         <div class="container footer-content">
             <div class="contact-item">
                 <i class="fa-brands fa-whatsapp"></i>
-                <span>WhatsApp: <a href="https://wa.me/8801897436108" target="_blank">01897436108</a></span>
+                <span>WhatsApp: <a href="https://wa.me/8801897436108" target="_blank" rel="noopener noreferrer">01897436108</a></span>
             </div>
             <div class="contact-item">
                 <i class="fa-solid fa-envelope"></i>
                 <span>Email: <a href="mailto:nittofy@gmail.com">nittofy@gmail.com</a></span>
             </div>
+        </div>
+        <div class="footer-links">
+            <a href="privacy.html">Privacy Policy</a>
+            <span>·</span>
+            <a href="terms.html">Terms &amp; Conditions</a>
         </div>
         <div class="copyright">
             &copy; 2026 Nittofy. All rights reserved.
@@ -150,10 +204,10 @@
 
     <!-- Cart Sidebar -->
     <div class="cart-overlay" id="cartOverlay" onclick="toggleCart()"></div>
-    <div class="cart-sidebar" id="cartSidebar">
+    <div class="cart-sidebar" id="cartSidebar" role="dialog" aria-label="Shopping cart">
         <div class="cart-header">
             <h3>My Cart</h3>
-            <button onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
+            <button onclick="toggleCart()" aria-label="Close cart"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="cart-items" id="cartItems"></div>
         <div class="cart-footer">

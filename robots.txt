@@ -1,3 +1,3 @@
 User-agent: *
 Allow: /
-Sitemap: https://yourusername.github.io/nittofy/sitemap.xml
+Sitemap: https://nittofy.github.io/sitemap.xml
