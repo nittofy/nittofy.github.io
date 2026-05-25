@@ -68,5 +68,12 @@
     "price": 450,
     "old_price": 490,
     "image": "images/fogg-fragrance-body-spray-for-men-fresh-.jpg"
+  },
+  {
+    "id": 11,
+    "name": "Arduino UNO",
+    "price": 945,
+    "old_price": 1050,
+    "image": "images/arduino-uno.jpg"
   }
 ]
