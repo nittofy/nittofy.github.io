@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nittofy Admin</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23ff6b00'/><text y='.9em' font-size='70' font-family='serif' font-weight='bold' fill='white' x='12'>N</text></svg>">
+<style>
+/* ── Reset ── */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --brand:#ff6b00;--brand-dk:#cc5500;
+  --bg:#f4f4f2;--surface:#fff;--border:#e5e5e3;
+  --text:#1a1a1a;--muted:#6b6b6b;--danger:#c0392b;
+  --success:#27ae60;--warn:#e67e22;
+  --radius:10px;--shadow:0 2px 12px rgba(0,0,0,0.08);
+  --font:'Segoe UI',system-ui,sans-serif;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:15px}
+
+/* ── Toast ── */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);
+  background:#1a1a1a;color:#fff;padding:11px 22px;border-radius:30px;font-size:13px;
+  font-weight:500;opacity:0;pointer-events:none;transition:all .3s;z-index:9999;
+  white-space:nowrap;max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.ok{background:var(--success)}
+#toast.warn{background:var(--warn)}
+#toast.err{background:var(--danger)}
+
+/* ── Login screen ── */
+#login-screen{
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;padding:20px;
+}
+.login-box{
+  background:var(--surface);border-radius:16px;border:1px solid var(--border);
+  padding:40px 36px;width:100%;max-width:440px;box-shadow:var(--shadow);
+}
+.login-logo{font-size:28px;font-weight:800;color:var(--text);margin-bottom:6px}
+.login-logo span{color:var(--brand)}
+.login-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.field{margin-bottom:16px}
+.field label{display:block;font-size:12px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.field input{width:100%;padding:11px 14px;border:1px solid var(--border);
+  border-radius:8px;font-size:14px;outline:none;font-family:var(--font);
+  background:var(--bg);transition:.2s}
+.field input:focus{border-color:var(--brand);background:#fff}
+.field small{display:block;font-size:11px;color:var(--muted);margin-top:5px}
+.pat-wrap{position:relative}
+.pat-wrap input{padding-right:42px;font-family:monospace;letter-spacing:.5px}
+.eye-btn{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;cursor:pointer;color:var(--muted);font-size:16px;padding:4px}
+.btn-primary{width:100%;padding:12px;background:var(--brand);color:#fff;border:none;
+  border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;transition:.2s;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-primary:hover{background:var(--brand-dk)}
+.btn-primary:disabled{background:#ccc;cursor:not-allowed}
+.lockout-msg{background:#fff0f0;border:1px solid #f5c6c6;border-radius:8px;
+  padding:12px 16px;font-size:13px;color:var(--danger);margin-bottom:16px;display:none}
+.login-help{margin-top:20px;background:#f8f4ff;border-radius:8px;padding:14px;font-size:12px;color:#555;line-height:1.7}
+.login-help b{color:#333}
+
+/* ── App shell ── */
+#app{display:none;min-height:100vh;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);
+  padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100}
+.topbar-left{display:flex;align-items:center;gap:14px}
+.topbar-logo{font-size:20px;font-weight:800;color:var(--text)}
+.topbar-logo span{color:var(--brand)}
+.badge-admin{background:#fff3ea;color:var(--brand);font-size:11px;font-weight:600;
+  padding:3px 9px;border-radius:20px;border:1px solid #ffd6b0}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.session-timer{font-size:12px;color:var(--muted)}
+.btn-logout{padding:7px 16px;background:none;border:1px solid var(--border);
+  border-radius:8px;font-size:13px;cursor:pointer;color:var(--muted);transition:.2s}
+.btn-logout:hover{border-color:var(--danger);color:var(--danger)}
+.main-content{flex:1;padding:28px 24px;max-width:1100px;margin:0 auto;width:100%}
+
+/* ── Stats row ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px 20px}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.stat-val{font-size:26px;font-weight:700;color:var(--text)}
+.stat-sub{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.toolbar-title{font-size:18px;font-weight:700}
+.toolbar-actions{display:flex;gap:10px}
+.btn-add{padding:9px 18px;background:var(--brand);color:#fff;border:none;
+  border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s}
+.btn-add:hover{background:var(--brand-dk)}
+.btn-save-all{padding:9px 18px;background:#1a1a1a;color:#fff;border:none;
+  border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:.2s}
+.btn-save-all:hover{background:#333}
+.btn-save-all:disabled{background:#999;cursor:not-allowed}
+
+/* ── Product table ── */
+.product-table{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.table-head{display:grid;grid-template-columns:60px 80px 1fr 110px 110px 90px 90px;
+  gap:0;padding:11px 16px;background:#fafaf8;border-bottom:1px solid var(--border);
+  font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.product-row{display:grid;grid-template-columns:60px 80px 1fr 110px 110px 90px 90px;
+  gap:0;padding:12px 16px;border-bottom:1px solid var(--border);align-items:center;
+  transition:.15s}
+.product-row:last-child{border-bottom:none}
+.product-row:hover{background:#fdfdfb}
+.row-num{font-size:12px;color:var(--muted);font-weight:500}
+.row-img{width:52px;height:52px;object-fit:contain;border-radius:6px;
+  border:1px solid var(--border);background:#fafaf8;padding:4px}
+.row-img-placeholder{width:52px;height:52px;border-radius:6px;border:1px dashed var(--border);
+  background:#fafaf8;display:flex;align-items:center;justify-content:center;font-size:20px;color:#ccc}
+.row-name{font-size:14px;font-weight:500;padding:0 12px}
+.row-price{font-size:14px;font-weight:700;color:var(--brand)}
+.row-old{font-size:13px;color:var(--muted);text-decoration:line-through}
+.discount-pill{display:inline-block;background:#fff3ea;color:var(--brand);
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid #ffd6b0}
+.row-actions{display:flex;gap:8px}
+.btn-edit{padding:6px 12px;background:none;border:1px solid var(--border);
+  border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);transition:.2s}
+.btn-edit:hover{border-color:var(--brand);color:var(--brand)}
+.btn-del{padding:6px 10px;background:none;border:1px solid var(--border);
+  border-radius:6px;font-size:12px;cursor:pointer;color:var(--muted);transition:.2s}
+.btn-del:hover{border-color:var(--danger);color:var(--danger);background:#fff0f0}
+.empty-state{padding:50px;text-align:center;color:var(--muted);font-size:14px}
+
+/* ── Modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;width:100%;max-width:580px;
+  max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--surface)}
+.modal-title{font-size:17px;font-weight:700}
+.modal-close{background:none;border:none;font-size:22px;cursor:pointer;color:var(--muted);
+  padding:4px;border-radius:6px;transition:.15s}
+.modal-close:hover{background:var(--bg);color:var(--text)}
+.modal-body{padding:20px 24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+
+.mfield{margin-bottom:18px}
+.mfield label{display:block;font-size:12px;font-weight:600;color:var(--muted);
+  text-transform:uppercase;letter-spacing:.4px;margin-bottom:6px}
+.mfield input{width:100%;padding:10px 13px;border:1px solid var(--border);
+  border-radius:7px;font-size:14px;outline:none;font-family:var(--font);transition:.2s}
+.mfield input:focus{border-color:var(--brand)}
+.mfield input.err{border-color:var(--danger)}
+.mfield .hint{font-size:11px;color:var(--muted);margin-top:4px}
+.mfield .err-msg{font-size:11px;color:var(--danger);margin-top:4px;display:none}
+.price-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.discount-preview{background:#fff3ea;border:1px solid #ffd6b0;border-radius:7px;
+  padding:10px 14px;font-size:13px;color:var(--brand);font-weight:600;text-align:center}
+
+/* ── Image upload ── */
+.img-upload-area{border:2px dashed var(--border);border-radius:10px;padding:28px;
+  text-align:center;cursor:pointer;transition:.2s;position:relative;background:#fafaf8}
+.img-upload-area:hover{border-color:var(--brand);background:#fff8f4}
+.img-upload-area.dragover{border-color:var(--brand);background:#fff3ea}
+.img-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:32px;color:#ccc;margin-bottom:8px}
+.upload-txt{font-size:13px;color:var(--muted)}
+.upload-txt b{color:var(--brand)}
+.upload-spec{font-size:11px;color:#bbb;margin-top:4px}
+.img-preview-wrap{position:relative;display:inline-block}
+.img-preview{width:120px;height:120px;object-fit:contain;border-radius:8px;
+  border:1px solid var(--border);background:#fafaf8;padding:6px}
+.img-preview-del{position:absolute;top:-8px;right:-8px;width:22px;height:22px;
+  background:var(--danger);color:#fff;border:none;border-radius:50%;cursor:pointer;
+  font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1}
+.img-processing{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* ── Confirm dialog ── */
+.confirm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:600;
+  display:none;align-items:center;justify-content:center;padding:20px}
+.confirm-overlay.open{display:flex}
+.confirm-box{background:var(--surface);border-radius:12px;padding:28px;width:100%;
+  max-width:380px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2)}
+.confirm-icon{font-size:40px;margin-bottom:12px}
+.confirm-title{font-size:17px;font-weight:700;margin-bottom:8px}
+.confirm-msg{font-size:14px;color:var(--muted);margin-bottom:22px;line-height:1.6}
+.confirm-actions{display:flex;gap:10px;justify-content:center}
+.btn-confirm-ok{padding:10px 24px;background:var(--danger);color:#fff;border:none;
+  border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.btn-confirm-cancel{padding:10px 24px;background:none;border:1px solid var(--border);
+  border-radius:8px;font-size:14px;cursor:pointer;color:var(--muted)}
+
+/* ── Saving overlay ── */
+#saving-overlay{position:fixed;inset:0;background:rgba(255,255,255,.85);z-index:700;
+  display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+#saving-overlay.open{display:flex}
+.saving-spinner{width:40px;height:40px;border:3px solid #eee;border-top-color:var(--brand);
+  border-radius:50%;animation:spin .8s linear infinite}
+.saving-txt{font-size:14px;color:var(--muted);font-weight:500}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .table-head,.product-row{grid-template-columns:50px 1fr 100px 80px}
+  .col-old,.col-dis,.col-num{display:none}
+}
+@media(max-width:600px){
+  .stats{grid-template-columns:1fr 1fr}
+  .table-head,.product-row{grid-template-columns:60px 1fr 80px}
+  .col-price{display:none}
+  .main-content{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN ══ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Nitto<span>fy</span></div>
+    <div class="login-sub">Admin Panel — Authorised access only</div>
+
+    <div id="lockout-msg" class="lockout-msg"></div>
+
+    <div class="field">
+      <label>GitHub Repository</label>
+      <input type="text" id="inp-repo" placeholder="e.g. nittofy/nittofy.github.io" autocomplete="off" spellcheck="false">
+      <small>Owner/repository — exactly as it appears on GitHub</small>
+    </div>
+    <div class="field">
+      <label>Personal Access Token (PAT)</label>
+      <div class="pat-wrap">
+        <input type="password" id="inp-pat" placeholder="github_pat_..." autocomplete="off" spellcheck="false">
+        <button class="eye-btn" id="eye-btn" onclick="togglePAT()" type="button" title="Show/hide token">👁</button>
+      </div>
+      <small>Fine-grained PAT with <b>Contents: Read &amp; Write</b> permission on this repo</small>
+    </div>
+
+    <button class="btn-primary" id="login-btn" onclick="doLogin()">
+      <span id="login-btn-txt">Sign in to Admin</span>
+    </button>
+
+    <div class="login-help">
+      <b>How to create a PAT:</b><br>
+      GitHub → Settings → Developer Settings → Personal access tokens → Fine-grained tokens → Generate new token<br>
+      · Repository access: <b>Only this repo</b><br>
+      · Permissions → Contents: <b>Read and Write</b><br>
+      · Set expiry: 90 days (renew periodically)
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-logo">Nitto<span>fy</span></div>
+      <div class="badge-admin">Admin</div>
+    </div>
+    <div class="topbar-right">
+      <div class="session-timer">Session: <span id="timer-txt">30:00</span></div>
+      <button class="btn-logout" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <!-- Stats -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-label">Total products</div>
+        <div class="stat-val" id="stat-count">0</div>
+        <div class="stat-sub">in catalogue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Avg. discount</div>
+        <div class="stat-val" id="stat-disc">0%</div>
+        <div class="stat-sub">across all items</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Last saved</div>
+        <div class="stat-val" style="font-size:16px" id="stat-saved">—</div>
+        <div class="stat-sub">to GitHub</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="toolbar-title">Products</div>
+      <div class="toolbar-actions">
+        <button class="btn-add" onclick="openModal()">+ Add product</button>
+        <button class="btn-save-all" id="save-btn" onclick="saveToGitHub()">⬆ Push to GitHub</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="product-table">
+      <div class="table-head">
+        <div class="col-num">#</div>
+        <div>Image</div>
+        <div>Product name</div>
+        <div class="col-price">Price</div>
+        <div class="col-old">Old price</div>
+        <div class="col-dis">Discount</div>
+        <div>Actions</div>
+      </div>
+      <div id="product-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PRODUCT MODAL ══ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title">Add product</div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="m-id">
+
+      <div class="mfield">
+        <label>Product name *</label>
+        <input type="text" id="m-name" placeholder="e.g. Kemei KM-1997 Professional Hair Trimmer" maxlength="120">
+        <div class="err-msg" id="err-name">Product name is required</div>
+      </div>
+
+      <div class="price-row">
+        <div class="mfield">
+          <label>Sale price (৳) *</label>
+          <input type="number" id="m-price" placeholder="2500" min="1" max="999999">
+          <div class="err-msg" id="err-price">Enter a valid price</div>
+        </div>
+        <div class="mfield">
+          <label>Original price (৳) *</label>
+          <input type="number" id="m-old" placeholder="3200" min="1" max="999999">
+          <div class="err-msg" id="err-old">Must be higher than sale price</div>
+        </div>
+      </div>
+
+      <div class="mfield" id="disc-preview-wrap" style="display:none">
+        <div class="discount-preview" id="disc-preview">Discount: —</div>
+      </div>
+
+      <div class="mfield">
+        <label>Product image *</label>
+        <div id="upload-area" class="img-upload-area">
+          <input type="file" id="img-input" accept="image/*" onchange="handleImageFile(this.files[0])">
+          <div class="upload-icon">📷</div>
+          <div class="upload-txt">Drag &amp; drop or <b>click to browse</b></div>
+          <div class="upload-spec">JPG, PNG, WEBP — will be auto-resized to 800×800px, max 85% quality</div>
+        </div>
+        <div id="img-preview-area" style="display:none;margin-top:12px;text-align:center">
+          <div class="img-preview-wrap">
+            <img id="img-preview" class="img-preview" src="" alt="Preview">
+            <button class="img-preview-del" onclick="clearImage()" title="Remove image">×</button>
+          </div>
+          <div class="img-processing" id="img-info"></div>
+        </div>
+        <div class="hint">Image will be saved as <code id="img-path-hint">images/&lt;name&gt;.jpg</code></div>
+        <div class="err-msg" id="err-img">Please upload a product image</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-confirm-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-add" onclick="saveProduct()">Save product</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIRM DELETE ══ -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-icon">🗑️</div>
+    <div class="confirm-title">Delete product?</div>
+    <div class="confirm-msg" id="confirm-msg">This cannot be undone.</div>
+    <div class="confirm-actions">
+      <button class="btn-confirm-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-confirm-ok" id="confirm-ok-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SAVING OVERLAY ══ -->
+<div id="saving-overlay">
+  <div class="saving-spinner"></div>
+  <div class="saving-txt" id="saving-txt">Pushing to GitHub…</div>
+</div>
+
+<!-- ══ TOAST ══ -->
+<div id="toast"></div>
+
+<script>
+/* ════════════════════════════════════════
+   CONFIG
+════════════════════════════════════════ */
+const CFG = {
+  IMAGE_SIZE:    800,        // px — output square
+  IMAGE_QUALITY: 0.85,       // JPEG quality
+  SESSION_MINS:  30,         // auto-logout after N minutes inactivity
+  MAX_ATTEMPTS:  5,          // wrong PAT lockout threshold
+  LOCKOUT_MINS:  15,         // lockout duration
+  LOCK_KEY:      'nf_lock',  // localStorage keys
+  ATTEMPT_KEY:   'nf_att',
+};
+
+/* ════════════════════════════════════════
+   STATE
+════════════════════════════════════════ */
+let PAT = '';
+let REPO = '';        // owner/repo
+let products = [];
+let editingId = null;
+let pendingImageB64 = null;   // base64 JPEG (no prefix)
+let pendingImagePath = null;  // images/xxx.jpg
+let currentImagePath = null;  // for edit — existing path
+let sessionTimer = null;
+let sessionLeft = CFG.SESSION_MINS * 60;
+let toastTimer = null;
+
+/* ════════════════════════════════════════
+   TOAST
+════════════════════════════════════════ */
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3500);
+}
+
+/* ════════════════════════════════════════
+   LOCKOUT
+════════════════════════════════════════ */
+function getLockout() {
+  try {
+    const d = JSON.parse(localStorage.getItem(CFG.LOCK_KEY) || '{}');
+    return d;
+  } catch { return {}; }
+}
+function setLockout(data) {
+  localStorage.setItem(CFG.LOCK_KEY, JSON.stringify(data));
+}
+function getAttempts() {
+  return parseInt(localStorage.getItem(CFG.ATTEMPT_KEY) || '0', 10);
+}
+function resetAttempts() {
+  localStorage.removeItem(CFG.ATTEMPT_KEY);
+  localStorage.removeItem(CFG.LOCK_KEY);
+}
+function recordFailedAttempt() {
+  const n = getAttempts() + 1;
+  localStorage.setItem(CFG.ATTEMPT_KEY, n);
+  if (n >= CFG.MAX_ATTEMPTS) {
+    setLockout({ until: Date.now() + CFG.LOCKOUT_MINS * 60 * 1000 });
+  }
+  return n;
+}
+
+function checkLockout() {
+  const d = getLockout();
+  if (d.until && Date.now() < d.until) {
+    const mins = Math.ceil((d.until - Date.now()) / 60000);
+    const msg = document.getElementById('lockout-msg');
+    msg.style.display = 'block';
+    msg.textContent = `Too many failed attempts. Try again in ${mins} minute${mins > 1 ? 's' : ''}.`;
+    document.getElementById('login-btn').disabled = true;
+    return true;
+  }
+  if (d.until && Date.now() >= d.until) {
+    resetAttempts();
+  }
+  return false;
+}
+
+/* ════════════════════════════════════════
+   AUTH & LOGIN
+════════════════════════════════════════ */
+function togglePAT() {
+  const inp = document.getElementById('inp-pat');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+async function doLogin() {
+  if (checkLockout()) return;
+
+  const repo = document.getElementById('inp-repo').value.trim();
+  const pat  = document.getElementById('inp-pat').value.trim();
+
+  if (!repo || !repo.includes('/')) {
+    toast('Enter repository as owner/repo', 'warn'); return;
+  }
+  if (!pat) {
+    toast('Enter your GitHub PAT', 'warn'); return;
+  }
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  document.getElementById('login-btn-txt').textContent = 'Verifying…';
+
+  try {
+    // Validate PAT against GitHub API — checks repo access
+    const r = await fetch(`https://api.github.com/repos/${repo}`, {
+      headers: { Authorization: `Bearer ${pat}`, 'X-GitHub-Api-Version': '2022-11-28' }
+    });
+
+    if (r.status === 401 || r.status === 403) {
+      const n = recordFailedAttempt();
+      const left = CFG.MAX_ATTEMPTS - n;
+      toast(left > 0
+        ? `Invalid token. ${left} attempt${left > 1 ? 's' : ''} left.`
+        : 'Account locked. Try again in 15 minutes.', 'err');
+      checkLockout();
+      btn.disabled = false;
+      document.getElementById('login-btn-txt').textContent = 'Sign in to Admin';
+      return;
+    }
+    if (!r.ok) {
+      toast('Repository not found. Check the repo name.', 'err');
+      btn.disabled = false;
+      document.getElementById('login-btn-txt').textContent = 'Sign in to Admin';
+      return;
+    }
+
+    // Success
+    resetAttempts();
+    PAT  = pat;
+    REPO = repo;
+    sessionStorage.setItem('nf_pat',  PAT);
+    sessionStorage.setItem('nf_repo', REPO);
+
+    await loadProducts();
+    showApp();
+
+  } catch (e) {
+    toast('Network error — check your connection.', 'err');
+    btn.disabled = false;
+    document.getElementById('login-btn-txt').textContent = 'Sign in to Admin';
+  }
+}
+
+function showApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'flex';
+  startSessionTimer();
+}
+
+function logout() {
+  PAT = ''; REPO = '';
+  sessionStorage.clear();
+  clearInterval(sessionTimer);
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('inp-pat').value = '';
+  toast('Signed out.');
+}
+
+/* ════════════════════════════════════════
+   SESSION TIMER
+════════════════════════════════════════ */
+function resetSession() { sessionLeft = CFG.SESSION_MINS * 60; }
+document.addEventListener('mousemove', resetSession);
+document.addEventListener('keydown', resetSession);
+document.addEventListener('click', resetSession);
+
+function startSessionTimer() {
+  sessionLeft = CFG.SESSION_MINS * 60;
+  clearInterval(sessionTimer);
+  sessionTimer = setInterval(() => {
+    sessionLeft--;
+    const m = String(Math.floor(sessionLeft / 60)).padStart(2, '0');
+    const s = String(sessionLeft % 60).padStart(2, '0');
+    document.getElementById('timer-txt').textContent = `${m}:${s}`;
+    if (sessionLeft <= 0) { toast('Session expired. Please sign in again.', 'warn'); logout(); }
+  }, 1000);
+}
+
+/* ════════════════════════════════════════
+   GITHUB API HELPERS
+════════════════════════════════════════ */
+async function ghGet(path) {
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    headers: { Authorization: `Bearer ${PAT}`, 'X-GitHub-Api-Version': '2022-11-28' }
+  });
+  if (!r.ok) throw new Error(`GET ${path} failed: ${r.status}`);
+  return r.json();
+}
+
+async function ghPut(path, content_b64, message, sha = null) {
+  const body = { message, content: content_b64 };
+  if (sha) body.sha = sha;
+  const r = await fetch(`https://api.github.com/repos/${REPO}/contents/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${PAT}`,
+      'Content-Type': 'application/json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) {
+    const e = await r.json().catch(() => ({}));
+    throw new Error(e.message || `PUT ${path} failed: ${r.status}`);
+  }
+  return r.json();
+}
+
+/* ════════════════════════════════════════
+   PRODUCTS — LOAD
+════════════════════════════════════════ */
+async function loadProducts() {
+  try {
+    const data = await ghGet('products.json');
+    const json = atob(data.content.replace(/\n/g, ''));
+    products = JSON.parse(json);
+    renderTable();
+    renderStats();
+  } catch (e) {
+    toast('Could not load products.json — is the file in the repo?', 'err');
+    products = [];
+    renderTable();
+  }
+}
+
+/* ════════════════════════════════════════
+   PRODUCTS — RENDER
+════════════════════════════════════════ */
+function renderTable() {
+  const el = document.getElementById('product-list');
+  if (!products.length) {
+    el.innerHTML = '<div class="empty-state">No products yet. Click <b>+ Add product</b> to start.</div>';
+    return;
+  }
+  el.innerHTML = products.map((p, i) => {
+    const disc = p.old_price > p.price
+      ? Math.round(((p.old_price - p.price) / p.old_price) * 100)
+      : 0;
+    const imgSrc = p.image ? `https://raw.githubusercontent.com/${REPO}/main/${esc(p.image)}?t=${Date.now()}` : '';
+    return `
+    <div class="product-row" id="prow-${p.id}">
+      <div class="row-num col-num">${i + 1}</div>
+      <div>
+        ${imgSrc
+          ? `<img class="row-img" src="${imgSrc}" alt="${esc(p.name)}" onerror="this.style.display='none'">`
+          : `<div class="row-img-placeholder">📦</div>`}
+      </div>
+      <div class="row-name">${esc(p.name)}</div>
+      <div class="row-price col-price">৳${p.price.toLocaleString()}</div>
+      <div class="row-old col-old">৳${p.old_price.toLocaleString()}</div>
+      <div class="col-dis">
+        ${disc > 0 ? `<span class="discount-pill">-${disc}%</span>` : '—'}
+      </div>
+      <div class="row-actions">
+        <button class="btn-edit" onclick="openModal(${p.id})">Edit</button>
+        <button class="btn-del"  onclick="confirmDelete(${p.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderStats() {
+  document.getElementById('stat-count').textContent = products.length;
+  const avg = products.length
+    ? Math.round(products.reduce((s, p) => {
+        return s + (p.old_price > p.price ? ((p.old_price - p.price) / p.old_price) * 100 : 0);
+      }, 0) / products.length)
+    : 0;
+  document.getElementById('stat-disc').textContent = avg + '%';
+}
+
+function esc(str) {
+  const d = document.createElement('div');
+  d.textContent = String(str || '');
+  return d.innerHTML;
+}
+
+/* ════════════════════════════════════════
+   MODAL — OPEN / CLOSE
+════════════════════════════════════════ */
+function openModal(id = null) {
+  resetSession();
+  editingId = id;
+  clearModalErrors();
+  pendingImageB64 = null;
+  pendingImagePath = null;
+  currentImagePath = null;
+
+  document.getElementById('img-preview-area').style.display = 'none';
+  document.getElementById('upload-area').style.display = 'block';
+  document.getElementById('img-input').value = '';
+  document.getElementById('disc-preview-wrap').style.display = 'none';
+
+  if (id !== null) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    document.getElementById('modal-title').textContent = 'Edit product';
+    document.getElementById('m-id').value   = p.id;
+    document.getElementById('m-name').value = p.name;
+    document.getElementById('m-price').value = p.price;
+    document.getElementById('m-old').value  = p.old_price;
+    currentImagePath = p.image;
+    updateDiscPreview();
+
+    // Show existing image
+    if (p.image) {
+      const src = `https://raw.githubusercontent.com/${REPO}/main/${p.image}?t=${Date.now()}`;
+      document.getElementById('img-preview').src = src;
+      document.getElementById('img-info').textContent = 'Current image (upload new one to replace)';
+      document.getElementById('img-preview-area').style.display = 'block';
+      document.getElementById('upload-area').style.display = 'none';
+    }
+  } else {
+    document.getElementById('modal-title').textContent = 'Add product';
+    document.getElementById('m-id').value   = '';
+    document.getElementById('m-name').value = '';
+    document.getElementById('m-price').value = '';
+    document.getElementById('m-old').value  = '';
+  }
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+  pendingImageB64 = null;
+}
+
+// Close on backdrop click
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+// Live discount preview
+['m-price', 'm-old'].forEach(id => {
+  document.getElementById(id).addEventListener('input', updateDiscPreview);
+});
+
+function updateDiscPreview() {
+  const price = parseFloat(document.getElementById('m-price').value);
+  const old   = parseFloat(document.getElementById('m-old').value);
+  const wrap  = document.getElementById('disc-preview-wrap');
+  if (price > 0 && old > price) {
+    const d = Math.round(((old - price) / old) * 100);
+    document.getElementById('disc-preview').textContent = `Discount badge will show: -${d}%`;
+    wrap.style.display = 'block';
+  } else {
+    wrap.style.display = 'none';
+  }
+}
+
+// Slug from product name for image filename
+function slugify(str) {
+  return str.toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 40) || 'product';
+}
+
+document.getElementById('m-name').addEventListener('input', () => {
+  const slug = slugify(document.getElementById('m-name').value);
+  document.getElementById('img-path-hint').textContent = `images/${slug}.jpg`;
+});
+
+/* ════════════════════════════════════════
+   IMAGE UPLOAD & RESIZE
+════════════════════════════════════════ */
+const uploadArea = document.getElementById('upload-area');
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) handleImageFile(f);
+});
+
+function handleImageFile(file) {
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { toast('Please select an image file.', 'warn'); return; }
+  if (file.size > 10 * 1024 * 1024) { toast('Image must be under 10 MB.', 'warn'); return; }
+
+  const reader = new FileReader();
+  reader.onload = e => resizeImage(e.target.result, file.name);
+  reader.readAsDataURL(file);
+}
+
+function resizeImage(dataURL, originalName) {
+  const img = new Image();
+  img.onload = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width  = CFG.IMAGE_SIZE;
+    canvas.height = CFG.IMAGE_SIZE;
+    const ctx = canvas.getContext('2d');
+
+    // White background (so transparent PNGs don't go black)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, CFG.IMAGE_SIZE, CFG.IMAGE_SIZE);
+
+    // Contain the image (letterbox) — keep aspect ratio
+    const scale  = Math.min(CFG.IMAGE_SIZE / img.width, CFG.IMAGE_SIZE / img.height);
+    const sw     = img.width  * scale;
+    const sh     = img.height * scale;
+    const ox     = (CFG.IMAGE_SIZE - sw) / 2;
+    const oy     = (CFG.IMAGE_SIZE - sh) / 2;
+    ctx.drawImage(img, ox, oy, sw, sh);
+
+    canvas.toBlob(blob => {
+      const reader = new FileReader();
+      reader.onload = ev => {
+        // Strip data URI prefix — store raw base64
+        pendingImageB64  = ev.target.result.split(',')[1];
+        const name       = slugify(document.getElementById('m-name').value || originalName.replace(/\.[^.]+$/, ''));
+        pendingImagePath = `images/${name}.jpg`;
+
+        // Show preview
+        document.getElementById('img-preview').src = ev.target.result;
+        const kb = Math.round(blob.size / 1024);
+        document.getElementById('img-info').textContent = `800×800px · ${kb} KB · ready to upload`;
+        document.getElementById('img-preview-area').style.display = 'block';
+        document.getElementById('upload-area').style.display = 'none';
+        document.getElementById('img-path-hint').textContent = pendingImagePath;
+
+        clearFieldError('err-img');
+      };
+      reader.readAsDataURL(blob);
+    }, 'image/jpeg', CFG.IMAGE_QUALITY);
+  };
+  img.src = dataURL;
+}
+
+function clearImage() {
+  pendingImageB64 = null;
+  pendingImagePath = null;
+  document.getElementById('img-preview-area').style.display = 'none';
+  document.getElementById('upload-area').style.display = 'block';
+  document.getElementById('img-input').value = '';
+  // If editing, keep currentImagePath so we don't lose the existing image
+}
+
+/* ════════════════════════════════════════
+   VALIDATION HELPERS
+════════════════════════════════════════ */
+function showFieldError(errId, inputId) {
+  document.getElementById(errId).style.display = 'block';
+  if (inputId) document.getElementById(inputId).classList.add('err');
+}
+function clearFieldError(errId, inputId) {
+  document.getElementById(errId).style.display = 'none';
+  if (inputId) document.getElementById(inputId).classList.remove('err');
+}
+function clearModalErrors() {
+  ['err-name', 'err-price', 'err-old', 'err-img'].forEach(e => clearFieldError(e));
+  ['m-name', 'm-price', 'm-old'].forEach(i => document.getElementById(i).classList.remove('err'));
+}
+
+/* ════════════════════════════════════════
+   SAVE PRODUCT (local — not yet on GitHub)
+════════════════════════════════════════ */
+function saveProduct() {
+  clearModalErrors();
+  let ok = true;
+
+  const name  = document.getElementById('m-name').value.trim();
+  const price = parseFloat(document.getElementById('m-price').value);
+  const old   = parseFloat(document.getElementById('m-old').value);
+
+  if (!name) { showFieldError('err-name', 'm-name'); ok = false; }
+  if (!price || price < 1) { showFieldError('err-price', 'm-price'); ok = false; }
+  if (!old || old <= price) { showFieldError('err-old', 'm-old'); ok = false; }
+
+  // Image: need either a new upload OR an existing image path (edit mode)
+  const hasImage = pendingImageB64 || currentImagePath;
+  if (!hasImage) { showFieldError('err-img'); ok = false; }
+
+  if (!ok) return;
+
+  const imagePath = pendingImagePath || currentImagePath;
+
+  if (editingId !== null) {
+    const idx = products.findIndex(p => p.id === editingId);
+    if (idx > -1) {
+      products[idx] = { id: editingId, name, price, old_price: old, image: imagePath };
+    }
+  } else {
+    const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+    products.push({ id: newId, name, price, old_price: old, image: imagePath });
+  }
+
+  renderTable();
+  renderStats();
+  closeModal();
+  toast('Product saved locally. Click "Push to GitHub" to publish.', 'ok');
+}
+
+/* ════════════════════════════════════════
+   DELETE
+════════════════════════════════════════ */
+function confirmDelete(id) {
+  const p = products.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('confirm-msg').textContent = `Delete "${p.name}"? This removes it from your local list — push to GitHub to apply.`;
+  document.getElementById('confirm-ok-btn').onclick = () => { doDelete(id); closeConfirm(); };
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); }
+function doDelete(id) {
+  products = products.filter(p => p.id !== id);
+  renderTable();
+  renderStats();
+  toast('Product removed. Push to GitHub to apply.', 'ok');
+}
+
+/* ════════════════════════════════════════
+   PUSH TO GITHUB
+════════════════════════════════════════ */
+async function saveToGitHub() {
+  resetSession();
+  showSaving('Uploading images…');
+
+  try {
+    // 1. Upload any pending new images first
+    for (const p of products) {
+      if (p.image === pendingImagePath && pendingImageB64) {
+        await uploadImage(pendingImagePath, pendingImageB64);
+      }
+    }
+    // Also handle image from the last modal save (could be different product)
+    if (pendingImageB64 && pendingImagePath) {
+      await uploadImage(pendingImagePath, pendingImageB64);
+    }
+
+    setSavingTxt('Updating products.json…');
+
+    // 2. Get current SHA of products.json
+    let sha = null;
+    try {
+      const current = await ghGet('products.json');
+      sha = current.sha;
+    } catch { /* file might not exist yet */ }
+
+    // 3. Encode and push
+    const json    = JSON.stringify(products, null, 2);
+    const b64     = btoa(unescape(encodeURIComponent(json)));
+    const ts      = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' });
+    await ghPut('products.json', b64, `Update products.json — ${ts}`, sha);
+
+    hideSaving();
+    pendingImageB64  = null;
+    pendingImagePath = null;
+
+    document.getElementById('stat-saved').textContent =
+      new Date().toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
+
+    toast('Live on GitHub! Site updates in ~60 seconds.', 'ok');
+
+  } catch (e) {
+    hideSaving();
+    toast('Push failed: ' + e.message, 'err');
+    console.error(e);
+  }
+}
+
+async function uploadImage(path, b64) {
+  let sha = null;
+  try { const ex = await ghGet(path); sha = ex.sha; } catch { /* new file */ }
+  const name = path.split('/').pop().replace('.jpg', '');
+  await ghPut(path, b64, `Add image: ${name}`, sha);
+}
+
+/* ════════════════════════════════════════
+   SAVING OVERLAY
+════════════════════════════════════════ */
+function showSaving(msg) {
+  document.getElementById('saving-txt').textContent = msg;
+  document.getElementById('saving-overlay').classList.add('open');
+}
+function setSavingTxt(msg) { document.getElementById('saving-txt').textContent = msg; }
+function hideSaving()  { document.getElementById('saving-overlay').classList.remove('open'); }
+
+/* ════════════════════════════════════════
+   RESUME SESSION (tab refresh)
+════════════════════════════════════════ */
+(function resumeSession() {
+  const pat  = sessionStorage.getItem('nf_pat');
+  const repo = sessionStorage.getItem('nf_repo');
+  if (pat && repo) {
+    PAT = pat; REPO = repo;
+    document.getElementById('inp-repo').value = repo;
+    loadProducts().then(() => showApp());
+  }
+})();
+
+/* ════════════════════════════════════════
+   KEYBOARD SHORTCUTS
+════════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') { closeModal(); closeConfirm(); }
+  if (e.key === 'Enter' && document.getElementById('login-screen').style.display !== 'none') doLogin();
+});
+</script>
+</body>
+</html>
