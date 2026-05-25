@@ -65,7 +65,9 @@ function sanitise(str) {
 // ============================================================
 async function loadProducts() {
     try {
-        const response = await fetch('products.json');
+        // Cache-bust: timestamp param forces CDN to always return the latest file
+        const url = `products.json?v=${Date.now()}`;
+        const response = await fetch(url, { cache: 'no-store' });
         if (!response.ok) throw new Error('Network response was not ok');
         const raw = await response.json();
 
