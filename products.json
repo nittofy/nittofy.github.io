@@ -47,5 +47,12 @@
     "price": 85000,
     "old_price": 90000,
     "image": "images/macbook-neo.jpg"
+  },
+  {
+    "id": 8,
+    "name": "Macbook Air",
+    "price": 110000,
+    "old_price": 120000,
+    "image": "images/macbook-air.jpg"
   }
 ]
