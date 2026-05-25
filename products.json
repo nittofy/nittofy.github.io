@@ -61,5 +61,12 @@
     "price": 120000,
     "old_price": 140000,
     "image": "images/macbook-m4.jpg"
+  },
+  {
+    "id": 10,
+    "name": "FOGG Fragrance Body Spray for Men Fresh Aromatic - 120ml",
+    "price": 450,
+    "old_price": 490,
+    "image": "images/fogg-fragrance-body-spray-for-men-fresh-.jpg"
   }
 ]
