@@ -171,14 +171,21 @@
         </div>
     </main>
 
-    <!-- Order Confirmation Page (new — shown after order is placed) -->
+    <!-- Order Confirmation Page -->
     <main id="confirm-view" class="container hidden">
         <div class="confirm-box">
             <div class="confirm-icon"><i class="fa-solid fa-circle-check"></i></div>
             <h2>Order Placed!</h2>
-            <p>Your order has been sent. We will contact you on <strong id="confirm-phone"></strong> to confirm.</p>
+            <p>Your order is saved. We will contact you on <strong id="confirm-phone"></strong> to confirm.</p>
             <p class="confirm-id">Order ID: <span id="confirm-order-id"></span></p>
-            <button class="place-order-btn" onclick="showHome()" style="max-width:260px;margin:20px auto 0;">
+
+            <!-- WhatsApp button — direct <a> tag, never blocked by browser -->
+            <a id="confirm-wa-btn" href="#" target="_blank" rel="noopener noreferrer" class="wa-confirm-btn">
+                <i class="fa-brands fa-whatsapp"></i> Send Order via WhatsApp
+            </a>
+            <p class="wa-note">Tap above to send your order details to us on WhatsApp.<br>Your order is already saved even if you skip this.</p>
+
+            <button class="place-order-btn" onclick="showHome()" style="max-width:260px;margin:16px auto 0;">
                 <i class="fa-solid fa-house"></i> Continue Shopping
             </button>
         </div>

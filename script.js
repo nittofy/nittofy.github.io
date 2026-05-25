@@ -349,11 +349,14 @@ function showHome() {
     window.scrollTo(0, 0);
 }
 
-function showConfirmation(orderId, phone) {
+function showConfirmation(orderId, phone, whatsappURL) {
     document.getElementById('checkout-view').classList.add('hidden');
     document.getElementById('home-view').classList.add('hidden');
     document.getElementById('confirm-order-id').textContent = orderId;
     document.getElementById('confirm-phone').textContent    = phone;
+    // Store URL on the WhatsApp button — triggered by direct user tap, never blocked
+    const waBtn = document.getElementById('confirm-wa-btn');
+    waBtn.href = whatsappURL;
     document.getElementById('confirm-view').classList.remove('hidden');
     window.scrollTo(0, 0);
 }
@@ -447,6 +450,10 @@ function placeOrder() {
         trxid:    trxId || 'N/A',
     };
 
+    // Build WhatsApp URL NOW while cart is still intact (cart gets cleared in afterOrderSuccess)
+    const cartSnapshot = [...cart];
+    const whatsappURL  = buildWhatsAppURL(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount, cartSnapshot);
+
     // --- Send to Google Sheets ---
     fetch(CONFIG.googleScriptURL, {
         method:  'POST',
@@ -455,33 +462,31 @@ function placeOrder() {
         body:    JSON.stringify(formData),
     })
     .then(() => {
-        sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount);
-        afterOrderSuccess(orderId, phone, btn);
+        afterOrderSuccess(orderId, phone, btn, whatsappURL);
     })
     .catch(error => {
         console.error('Sheet error:', error.message);
-        // Still open WhatsApp so the sale isn't lost
-        sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount);
-        afterOrderSuccess(orderId, phone, btn);
+        afterOrderSuccess(orderId, phone, btn, whatsappURL);
     });
 }
 
-function afterOrderSuccess(orderId, phone, btn) {
+function afterOrderSuccess(orderId, phone, btn, whatsappURL) {
     btn.innerHTML = 'Place Order <i class="fa-brands fa-whatsapp"></i>';
     btn.disabled  = false;
     // Clear cart after order
     cart = [];
     saveAndUpdate();
-    // Show confirmation page
-    showConfirmation(orderId, phone);
+    // Show confirmation page with WhatsApp URL ready for manual tap
+    showConfirmation(orderId, phone, whatsappURL);
 }
 
-function sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount) {
+function buildWhatsAppURL(orderId, name, phone, email, address, paymentMethod, trxId, totalAmount, cartSnapshot) {
+    // Takes a cart snapshot so we can call this BEFORE cart is cleared
     let msg = `Hello, I want to place an order.%0A%0A`;
     msg    += `Order ID: ${orderId}%0A%0A`;
     msg    += `Products:%0A`;
 
-    cart.forEach(item => {
+    cartSnapshot.forEach(item => {
         msg += `- ${encodeURIComponent(item.name)} %C3%97 ${item.qty}%0A`;
     });
 
@@ -497,7 +502,7 @@ function sendToWhatsApp(orderId, name, phone, email, address, paymentMethod, trx
         msg += `bKash TrxID: ${encodeURIComponent(trxId)}%0A`;
     }
 
-    window.open(`https://wa.me/${CONFIG.whatsappNumber}?text=${msg}`, '_blank');
+    return `https://wa.me/${CONFIG.whatsappNumber}?text=${msg}`;
 }
 
 // ============================================================
