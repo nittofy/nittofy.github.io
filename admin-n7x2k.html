@@ -410,9 +410,12 @@ let PAT = '';
 let REPO = '';        // owner/repo
 let products = [];
 let editingId = null;
-let pendingImageB64 = null;   // base64 JPEG (no prefix)
-let pendingImagePath = null;  // images/xxx.jpg
-let currentImagePath = null;  // for edit — existing path
+// Map of imagePath → base64 string — one entry per pending image upload
+// Fixes the bug where only the last uploaded image was tracked
+let pendingImages = new Map();
+let currentImagePath = null;  // for edit — existing path kept if no new image uploaded
+let modalImageB64 = null;     // new image b64 for the currently open modal
+let modalImagePath = null;    // new image path for the currently open modal
 let sessionTimer = null;
 let sessionLeft = CFG.SESSION_MINS * 60;
 let toastTimer = null;
@@ -680,8 +683,9 @@ function openModal(id = null) {
   resetSession();
   editingId = id;
   clearModalErrors();
-  pendingImageB64 = null;
-  pendingImagePath = null;
+  // Reset only modal-scoped image vars — pendingImages Map is preserved across modals
+  modalImageB64 = null;
+  modalImagePath = null;
   currentImagePath = null;
 
   document.getElementById('img-preview-area').style.display = 'none';
@@ -693,27 +697,29 @@ function openModal(id = null) {
     const p = products.find(x => x.id === id);
     if (!p) return;
     document.getElementById('modal-title').textContent = 'Edit product';
-    document.getElementById('m-id').value   = p.id;
-    document.getElementById('m-name').value = p.name;
+    document.getElementById('m-id').value    = p.id;
+    document.getElementById('m-name').value  = p.name;
     document.getElementById('m-price').value = p.price;
-    document.getElementById('m-old').value  = p.old_price;
-    currentImagePath = p.image;
+    document.getElementById('m-old').value   = p.old_price;
+    // BUG FIX: always capture existing image path — was being lost on save
+    currentImagePath = p.image || null;
     updateDiscPreview();
 
-    // Show existing image
+    // Show existing image preview (display only — path already captured above)
     if (p.image) {
       const src = `https://raw.githubusercontent.com/${REPO}/main/${p.image}?t=${Date.now()}`;
       document.getElementById('img-preview').src = src;
-      document.getElementById('img-info').textContent = 'Current image (upload new one to replace)';
+      document.getElementById('img-info').textContent = 'Current image — upload a new one to replace it';
       document.getElementById('img-preview-area').style.display = 'block';
       document.getElementById('upload-area').style.display = 'none';
+      document.getElementById('img-path-hint').textContent = p.image;
     }
   } else {
     document.getElementById('modal-title').textContent = 'Add product';
-    document.getElementById('m-id').value   = '';
-    document.getElementById('m-name').value = '';
+    document.getElementById('m-id').value    = '';
+    document.getElementById('m-name').value  = '';
     document.getElementById('m-price').value = '';
-    document.getElementById('m-old').value  = '';
+    document.getElementById('m-old').value   = '';
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -721,7 +727,8 @@ function openModal(id = null) {
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('open');
   editingId = null;
-  pendingImageB64 = null;
+  modalImageB64 = null;
+  modalImagePath = null;
 }
 
 // Close on backdrop click
@@ -808,9 +815,9 @@ function resizeImage(dataURL, originalName) {
       const reader = new FileReader();
       reader.onload = ev => {
         // Strip data URI prefix — store raw base64
-        pendingImageB64  = ev.target.result.split(',')[1];
-        const name       = slugify(document.getElementById('m-name').value || originalName.replace(/\.[^.]+$/, ''));
-        pendingImagePath = `images/${name}.jpg`;
+        modalImageB64  = ev.target.result.split(',')[1];
+        const name     = slugify(document.getElementById('m-name').value || originalName.replace(/\.[^.]+$/, ''));
+        modalImagePath = `images/${name}.jpg`;
 
         // Show preview
         document.getElementById('img-preview').src = ev.target.result;
@@ -818,7 +825,7 @@ function resizeImage(dataURL, originalName) {
         document.getElementById('img-info').textContent = `800×800px · ${kb} KB · ready to upload`;
         document.getElementById('img-preview-area').style.display = 'block';
         document.getElementById('upload-area').style.display = 'none';
-        document.getElementById('img-path-hint').textContent = pendingImagePath;
+        document.getElementById('img-path-hint').textContent = modalImagePath;
 
         clearFieldError('err-img');
       };
@@ -829,12 +836,12 @@ function resizeImage(dataURL, originalName) {
 }
 
 function clearImage() {
-  pendingImageB64 = null;
-  pendingImagePath = null;
+  modalImageB64 = null;
+  modalImagePath = null;
   document.getElementById('img-preview-area').style.display = 'none';
   document.getElementById('upload-area').style.display = 'block';
   document.getElementById('img-input').value = '';
-  // If editing, keep currentImagePath so we don't lose the existing image
+  // currentImagePath is preserved — existing image still valid for edit mode
 }
 
 /* ════════════════════════════════════════
@@ -869,12 +876,18 @@ function saveProduct() {
   if (!old || old <= price) { showFieldError('err-old', 'm-old'); ok = false; }
 
   // Image: need either a new upload OR an existing image path (edit mode)
-  const hasImage = pendingImageB64 || currentImagePath;
+  const hasImage = modalImageB64 || currentImagePath;
   if (!hasImage) { showFieldError('err-img'); ok = false; }
 
   if (!ok) return;
 
-  const imagePath = pendingImagePath || currentImagePath;
+  // Use new uploaded image path, or fall back to existing path
+  const imagePath = modalImagePath || currentImagePath;
+
+  // If a new image was uploaded, store it in the pending queue keyed by path
+  if (modalImageB64 && modalImagePath) {
+    pendingImages.set(modalImagePath, modalImageB64);
+  }
 
   if (editingId !== null) {
     const idx = products.findIndex(p => p.id === editingId);
@@ -915,18 +928,19 @@ function doDelete(id) {
 ════════════════════════════════════════ */
 async function saveToGitHub() {
   resetSession();
-  showSaving('Uploading images…');
+
+  const totalImages = pendingImages.size;
+  let uploadedCount = 0;
 
   try {
-    // 1. Upload any pending new images first
-    for (const p of products) {
-      if (p.image === pendingImagePath && pendingImageB64) {
-        await uploadImage(pendingImagePath, pendingImageB64);
+    // 1. Upload ALL pending images from the Map
+    if (totalImages > 0) {
+      for (const [path, b64] of pendingImages.entries()) {
+        showSaving(`Uploading image ${++uploadedCount} of ${totalImages}: ${path.split('/').pop()}`);
+        await uploadImage(path, b64);
       }
-    }
-    // Also handle image from the last modal save (could be different product)
-    if (pendingImageB64 && pendingImagePath) {
-      await uploadImage(pendingImagePath, pendingImageB64);
+    } else {
+      showSaving('Updating products.json…');
     }
 
     setSavingTxt('Updating products.json…');
@@ -938,15 +952,15 @@ async function saveToGitHub() {
       sha = current.sha;
     } catch { /* file might not exist yet */ }
 
-    // 3. Encode and push
-    const json    = JSON.stringify(products, null, 2);
-    const b64     = btoa(unescape(encodeURIComponent(json)));
-    const ts      = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' });
+    // 3. Encode and push products.json
+    const json = JSON.stringify(products, null, 2);
+    const b64  = btoa(unescape(encodeURIComponent(json)));
+    const ts   = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' });
     await ghPut('products.json', b64, `Update products.json — ${ts}`, sha);
 
     hideSaving();
-    pendingImageB64  = null;
-    pendingImagePath = null;
+    // Clear ALL pending images after successful push
+    pendingImages.clear();
 
     document.getElementById('stat-saved').textContent =
       new Date().toLocaleTimeString('en-BD', { hour: '2-digit', minute: '2-digit' });
