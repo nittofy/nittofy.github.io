@@ -40,5 +40,12 @@
     "price": 1200,
     "old_price": 1500,
     "image": "images/mouse.jpg"
+  },
+  {
+    "id": 7,
+    "name": "MacBook Neo",
+    "price": 85000,
+    "old_price": 90000,
+    "image": "images/macbook-neo.jpg"
   }
 ]
