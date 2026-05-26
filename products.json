@@ -81,6 +81,17 @@
     "name": "VIVO Y19s",
     "price": 18999,
     "old_price": 19999,
-    "image": "images/vivo-y19s.jpg"
+    "image": "images/vivo-y19s.jpg",
+    "description": "The Vivo Y19s Pro in Diamond Black is a sleek smartphone that perfectly blends style with strong performance. Featuring 6GB of RAM for smooth multitasking and 128GB of storage for all your apps and media, it's ideal for anyone seeking a reliable, good-looking device. This phone is designed for effortless daily use, from communication to entertainment, all wrapped in a premium finish.",
+    "features": [
+      "Cellular Network 4G",
+      "Physical SIM 2 x Nano-SIM",
+      "Display Size 6.68 inches, 107.4 cm2 (85.1% screen-to-body ratio)",
+      "OS Android 15, Funtouch 15",
+      "ROM 128GB",
+      "RAM 6GB",
+      "Fingerprint Yes",
+      "Battery Details Li-Ion 6000 mAh"
+    ]
   }
 ]
