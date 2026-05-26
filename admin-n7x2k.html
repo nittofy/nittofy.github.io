@@ -181,6 +181,29 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .confirm-overlay.open{display:flex}
 .confirm-box{background:var(--surface);border-radius:12px;padding:28px;width:100%;
   max-width:380px;text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.2)}
+
+/* ── Description & Features ── */
+.mfield textarea{width:100%;padding:10px 13px;border:1px solid var(--border);
+  border-radius:7px;font-size:14px;outline:none;font-family:var(--font);
+  resize:vertical;min-height:90px;transition:.2s;line-height:1.6}
+.mfield textarea:focus{border-color:var(--brand)}
+.char-count{font-size:11px;color:var(--muted);text-align:right;margin-top:3px}
+.char-warn{color:var(--warn)}
+
+.feat-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.feat-item{display:flex;align-items:center;gap:8px}
+.feat-item input{flex:1;padding:8px 12px;border:1px solid var(--border);
+  border-radius:7px;font-size:13px;outline:none;font-family:var(--font)}
+.feat-item input:focus{border-color:var(--brand)}
+.feat-del{width:30px;height:30px;background:none;border:1px solid var(--border);
+  border-radius:6px;cursor:pointer;color:var(--muted);font-size:16px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.15s}
+.feat-del:hover{background:#fff0f0;border-color:var(--danger);color:var(--danger)}
+.btn-add-feat{padding:7px 14px;background:none;border:1px dashed var(--border);
+  border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);
+  width:100%;transition:.2s}
+.btn-add-feat:hover{border-color:var(--brand);color:var(--brand);background:#fff8f4}
+.feat-hint{font-size:11px;color:var(--muted);margin-top:5px}
 .confirm-icon{font-size:40px;margin-bottom:12px}
 .confirm-title{font-size:17px;font-weight:700;margin-bottom:8px}
 .confirm-msg{font-size:14px;color:var(--muted);margin-bottom:22px;line-height:1.6}
@@ -358,6 +381,19 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
         </div>
         <div class="hint">Image will be saved as <code id="img-path-hint">images/&lt;name&gt;.jpg</code></div>
         <div class="err-msg" id="err-img">Please upload a product image</div>
+      </div>
+
+      <div class="mfield">
+        <label>Product description <span style="font-weight:400;text-transform:none">(optional)</span></label>
+        <textarea id="m-desc" placeholder="Describe the product — material, usage, compatibility, warranty..." maxlength="800"></textarea>
+        <div class="char-count"><span id="desc-count">0</span> / 800</div>
+      </div>
+
+      <div class="mfield">
+        <label>Key features <span style="font-weight:400;text-transform:none">(optional)</span></label>
+        <div class="feat-list" id="feat-list"></div>
+        <button type="button" class="btn-add-feat" onclick="addFeatureRow()">+ Add feature point</button>
+        <div class="feat-hint">Each point appears as a ✓ bullet on the product page. E.g. "Battery life: 8 hours"</div>
       </div>
     </div>
     <div class="modal-footer">
@@ -714,12 +750,24 @@ function openModal(id = null) {
       document.getElementById('upload-area').style.display = 'none';
       document.getElementById('img-path-hint').textContent = p.image;
     }
+
+    // Populate description & features
+    const descEl = document.getElementById('m-desc');
+    descEl.value = p.description || '';
+    descEl.dispatchEvent(new Event('input')); // trigger char counter
+    setFeatures(p.features || []);
+
   } else {
     document.getElementById('modal-title').textContent = 'Add product';
     document.getElementById('m-id').value    = '';
     document.getElementById('m-name').value  = '';
     document.getElementById('m-price').value = '';
     document.getElementById('m-old').value   = '';
+    // Clear desc & features for new product
+    const descEl = document.getElementById('m-desc');
+    descEl.value = '';
+    descEl.dispatchEvent(new Event('input'));
+    setFeatures([]);
   }
   document.getElementById('modal-overlay').classList.add('open');
 }
@@ -844,6 +892,56 @@ function clearImage() {
   // currentImagePath is preserved — existing image still valid for edit mode
 }
 
+/* ── Description char counter ── */
+document.getElementById('m-desc').addEventListener('input', function() {
+  const n = this.value.length;
+  const el = document.getElementById('desc-count');
+  el.textContent = n;
+  el.parentElement.className = n > 720 ? 'char-count char-warn' : 'char-count';
+});
+
+/* ── Features builder ── */
+let featIdCounter = 0;
+
+function addFeatureRow(value = '') {
+  const list = document.getElementById('feat-list');
+  const id   = 'feat-' + (++featIdCounter);
+  const row  = document.createElement('div');
+  row.className = 'feat-item';
+  row.id = id;
+
+  const inp = document.createElement('input');
+  inp.type        = 'text';
+  inp.placeholder = 'e.g. Battery life: 8 hours';
+  inp.maxLength   = 120;
+  inp.value       = value;
+
+  const del = document.createElement('button');
+  del.type      = 'button';
+  del.className = 'feat-del';
+  del.title     = 'Remove';
+  del.textContent = '×';
+  del.addEventListener('click', () => row.remove());
+
+  row.appendChild(inp);
+  row.appendChild(del);
+  list.appendChild(row);
+  inp.focus();
+}
+
+function getFeatures() {
+  // Collect all non-empty feature inputs
+  return Array.from(document.querySelectorAll('#feat-list .feat-item input'))
+    .map(i => i.value.trim())
+    .filter(Boolean);
+}
+
+function setFeatures(arr) {
+  document.getElementById('feat-list').innerHTML = '';
+  featIdCounter = 0;
+  (arr || []).forEach(v => addFeatureRow(v));
+}
+
 /* ════════════════════════════════════════
    VALIDATION HELPERS
 ════════════════════════════════════════ */
@@ -889,14 +987,25 @@ function saveProduct() {
     pendingImages.set(modalImagePath, modalImageB64);
   }
 
+  // Collect description & features
+  const description = document.getElementById('m-desc').value.trim();
+  const features    = getFeatures();
+
+  // Build product object — only include optional fields if they have content
+  const productData = { id: null, name, price, old_price: old, image: imagePath };
+  if (description) productData.description = description;
+  if (features.length) productData.features = features;
+
   if (editingId !== null) {
     const idx = products.findIndex(p => p.id === editingId);
     if (idx > -1) {
-      products[idx] = { id: editingId, name, price, old_price: old, image: imagePath };
+      productData.id = editingId;
+      products[idx] = productData;
     }
   } else {
     const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-    products.push({ id: newId, name, price, old_price: old, image: imagePath });
+    productData.id = newId;
+    products.push(productData);
   }
 
   renderTable();
