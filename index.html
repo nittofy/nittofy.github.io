@@ -101,6 +101,38 @@
         </div>
     </main>
 
+
+    <!-- Product Detail View -->
+    <main id="detail-view" class="container hidden">
+        <button class="back-btn" id="detail-back-btn" aria-label="Back">
+            <i class="fa-solid fa-arrow-left"></i> Back
+        </button>
+        <div class="detail-container">
+            <div class="detail-img-wrap">
+                <span class="detail-badge" id="detail-badge"></span>
+                <img id="detail-img" src="" alt="" class="detail-img">
+            </div>
+            <div class="detail-info">
+                <h1 class="detail-title" id="detail-title"></h1>
+                <div class="detail-prices">
+                    <span class="detail-price" id="detail-price"></span>
+                    <span class="detail-old-price" id="detail-old-price"></span>
+                    <span class="detail-saving" id="detail-saving"></span>
+                </div>
+                <div class="detail-desc-wrap" id="detail-desc-wrap">
+                    <p class="detail-desc" id="detail-desc"></p>
+                </div>
+                <div class="detail-features-wrap" id="detail-features-wrap">
+                    <h4 class="detail-features-title">Key Features</h4>
+                    <ul class="detail-features" id="detail-features"></ul>
+                </div>
+                <button class="detail-add-btn" id="detail-add-btn">
+                    <i class="fa-solid fa-cart-plus"></i> Add to Cart
+                </button>
+            </div>
+        </div>
+    </main>
+
     <!-- Checkout Page -->
     <main id="checkout-view" class="container hidden">
         <button class="back-btn" onclick="showHome()" aria-label="Back to shopping">

@@ -71,7 +71,7 @@ async function loadProducts() {
         if (!response.ok) throw new Error('Network response was not ok');
         const raw = await response.json();
 
-        // Validate product shape before using
+        // Validate product shape before using (description & features are optional)
         products = raw.filter(p =>
             typeof p.id        === 'number' &&
             typeof p.name      === 'string' &&
@@ -149,15 +149,25 @@ function renderProducts(list) {
         const btn = document.createElement('button');
         btn.className = 'add-btn';
         btn.textContent = 'Add to Cart';
-        btn.addEventListener('click', () => addToCart(product.id));
+        // Stop propagation so clicking button doesn't also open detail view
+        btn.addEventListener('click', (e) => { e.stopPropagation(); addToCart(product.id); });
+
+        const hint = document.createElement('p');
+        hint.className = 'view-hint';
+        hint.textContent = '👆 Tap card for details';
 
         info.appendChild(title);
         info.appendChild(prices);
         info.appendChild(btn);
+        info.appendChild(hint);
 
         card.appendChild(badge);
         card.appendChild(img);
         card.appendChild(info);
+
+        // Entire card opens product detail (except the Add to Cart button)
+        card.addEventListener('click', () => showDetail(product.id));
+
         container.appendChild(card);
     });
 }
@@ -344,8 +354,86 @@ function goToCheckout() {
 function showHome() {
     document.getElementById('checkout-view').classList.add('hidden');
     document.getElementById('confirm-view').classList.add('hidden');
+    document.getElementById('detail-view').classList.add('hidden');
     document.getElementById('home-view').classList.remove('hidden');
     document.getElementById('searchContainer').classList.remove('hidden');
+    window.scrollTo(0, 0);
+}
+
+// ============================================================
+//  PRODUCT DETAIL VIEW
+// ============================================================
+function showDetail(id) {
+    const p = products.find(x => x.id === id);
+    if (!p) return;
+    // Safety: if detail-view element missing from HTML, do nothing silently
+    if (!document.getElementById('detail-view')) {
+        console.error('detail-view element not found in index.html — re-upload the latest index.html');
+        return;
+    }
+
+    // Populate image
+    const img = document.getElementById('detail-img');
+    img.src = p.image;
+    img.alt = p.name;
+    img.onerror = () => { img.src = 'images/placeholder.jpg'; };
+
+    // Badge
+    const discount = Math.round(((p.old_price - p.price) / p.old_price) * 100);
+    const badge = document.getElementById('detail-badge');
+    if (discount > 0) {
+        badge.textContent = `-${discount}%`;
+        badge.style.display = 'inline-block';
+    } else {
+        badge.style.display = 'none';
+    }
+
+    // Name & prices
+    document.getElementById('detail-title').textContent    = p.name;
+    document.getElementById('detail-price').textContent    = `৳${p.price.toLocaleString()}`;
+    document.getElementById('detail-old-price').textContent = `৳${p.old_price.toLocaleString()}`;
+    const saving = p.old_price - p.price;
+    document.getElementById('detail-saving').textContent   = saving > 0 ? `Save ৳${saving.toLocaleString()}` : '';
+
+    // Description
+    const descWrap = document.getElementById('detail-desc-wrap');
+    const descEl   = document.getElementById('detail-desc');
+    if (p.description && p.description.trim()) {
+        descEl.textContent = p.description;
+        descWrap.style.display = 'block';
+    } else {
+        descWrap.style.display = 'none';
+    }
+
+    // Features
+    const featWrap = document.getElementById('detail-features-wrap');
+    const featList = document.getElementById('detail-features');
+    featList.innerHTML = '';
+    if (p.features && Array.isArray(p.features) && p.features.length > 0) {
+        p.features.forEach(f => {
+            const li = document.createElement('li');
+            li.textContent = f;
+            featList.appendChild(li);
+        });
+        featWrap.style.display = 'block';
+    } else {
+        featWrap.style.display = 'none';
+    }
+
+    // Add to cart button
+    const addBtn = document.getElementById('detail-add-btn');
+    addBtn.onclick = () => { addToCart(p.id); };
+
+    // Back button — go back to wherever user came from
+    const backBtn = document.getElementById('detail-back-btn');
+    backBtn.onclick = () => showHome();
+
+    // Show/hide views
+    document.getElementById('home-view').classList.add('hidden');
+    document.getElementById('checkout-view').classList.add('hidden');
+    document.getElementById('confirm-view').classList.add('hidden');
+    document.getElementById('searchContainer').classList.add('hidden');
+    document.getElementById('detail-view').classList.remove('hidden');
     window.scrollTo(0, 0);
 }
 
