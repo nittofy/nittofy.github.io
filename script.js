@@ -343,9 +343,10 @@ function toggleCart(forceOpen) {
 function goToCheckout() {
     if (cart.length === 0) return showToast('Your cart is empty!', 'warn');
     toggleCart(false);
-    document.getElementById('home-view').classList.add('hidden');
-    document.getElementById('searchContainer').classList.add('hidden');
-    document.getElementById('confirm-view').classList.add('hidden');
+    // Hide ALL views — including detail-view which was left open when coming from product page
+    ['home-view', 'detail-view', 'confirm-view', 'searchContainer'].forEach(id => {
+        document.getElementById(id).classList.add('hidden');
+    });
     document.getElementById('checkout-view').classList.remove('hidden');
     renderCheckoutSummary();
     window.scrollTo(0, 0);
