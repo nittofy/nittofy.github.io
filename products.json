@@ -75,5 +75,12 @@
     "price": 945,
     "old_price": 1050,
     "image": "images/arduino-uno.jpg"
+  },
+  {
+    "id": 12,
+    "name": "VIVO Y19s",
+    "price": 18999,
+    "old_price": 19999,
+    "image": "images/vivo-y19s.jpg"
   }
 ]
